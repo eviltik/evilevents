@@ -190,11 +190,16 @@ function disconnect(callback) {
     return;
 }
 
+function info() {
+    return options;
+}
+
 module.exports = function(s) {
     evilevents = s;
     return {
         connect:connect,
         disconnect:disconnect,
-        send:send
+        send:send,
+        info:info
     }
 };

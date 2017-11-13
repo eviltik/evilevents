@@ -266,11 +266,16 @@ function send(eventName, payload) {
 
 }
 
+function info() {
+    return options;
+}
+
 module.exports = function(s) {
     evilevents = s;
     return {
         startServer: startServer,
         stopServer: stopServer,
-        send: send
+        send: send,
+        info:info
     }
 };
