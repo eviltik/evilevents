@@ -11,11 +11,23 @@ let serverWrite;
 let write;
 
 function socketWrite(socket, data) {
-    VERBOSE && console.log(
-        'worker'+' "'+(options.forkId || 'master')+'" => %s: writing %s',
-        '"'+(socket._forkId||"master")+'"',
-        JSON.stringify(data)
-    );
+    if (VERBOSE) {
+        if (options.forkId) {
+            console.log(
+                'worker %s => (socket %s) master: writing %s',
+                options.forkId,
+                socket._type,
+                JSON.stringify(data)
+            );
+        } else {
+            console.log(
+                'master => %s: (socket %s) writing %s',
+                socket._forkId,
+                socket._type,
+                JSON.stringify(data)
+            );
+        }
+    }
 
     if (socket.sendMessage) {
         if (!socket.sendMessage(data)) {
@@ -46,7 +58,7 @@ function sendToClient(forkId, eventName, payload) {
         return;
     }
 
-    VERBOSE && console.log('master: sending %s to "%s"', JSON.stringify(payload), forkId);
+    VERBOSE && console.log('master: sendingToClient %s to "%s"', JSON.stringify(payload), forkId);
 
     socketWrite(clients[forkId].readSocket,{
         eventName:eventName,
@@ -61,7 +73,11 @@ function onSocketClose() {
 
 function onDataReceived(data) {
 
-    VERBOSE && console.log("master: data received", JSON.stringify(data));
+    VERBOSE && console.log(
+        "master: data received on socket %s",
+        this.socket.type,
+        JSON.stringify(data)
+    );
 
     if (data.eventName) {
 
@@ -79,6 +95,7 @@ function onDataReceived(data) {
         return;
 
     } else if (data.hello) {
+
         // first message sent by the worker
         // store the socket
 
@@ -96,10 +113,10 @@ function onDataReceived(data) {
 
         if (data.type === "writer") {
             clients[data.hello].writeSocket = this.dup;
-            this.socket._type = this.dup._type = "writer fork => master";
+            this.socket._type = this.dup._type = "writer";
         } else if (data.type === "reader") {
             clients[data.hello].readSocket = this.dup;
-            this.socket._type = this.dup._type = "reader master => fork";
+            this.socket._type = this.dup._type = "reader";
         }
         socketWrite(this.dup,{hello: true});
         return;
@@ -117,11 +134,15 @@ function onDataReceived(data) {
     }
 }
 
-function onClientConnected(socket) {
+function onClientConnected(socket, socketType) {
 
     if (VERBOSE) {
 
-        console.info('master: client connected (%s)',options.transport);
+        console.info(
+            'master: client connected (%s) on socket %s',
+            options.transport,
+            socketType
+        );
 
         socket.on('drain',function() {
             console.log('master: socket %s drain',socket._forkId);
@@ -169,6 +190,8 @@ function onClientConnected(socket) {
 
     let dup;
 
+    socket.type = socketType;
+
     if (options.msgpack) {
         dup = msgpack(socket);
         dup.on("data",onDataReceived.bind({dup:dup,socket:socket}));
@@ -188,8 +211,13 @@ function startServer(opts, callback) {
     options = require('./options')(opts);
     VERBOSE = options.verbose;
 
-    serverRead = net.createServer(onClientConnected);
-    serverWrite = net.createServer(onClientConnected);
+    serverRead = net.createServer((socket) => {
+        onClientConnected(socket,'read');
+    });
+
+    serverWrite = net.createServer((socket) => {
+        onClientConnected(socket,'write');
+    });
 
     if (options.transport === 'ipc') {
 
