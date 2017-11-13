@@ -12,8 +12,8 @@ function parseOptions(opts) {
 
     let defaults = {
         transport:"ipc",
-        pipeFileNameToMaster:(opts.pipeFileName || 'evilevents')+'tomaster',
-        pipeFileNameFromMaster:(opts.pipeFileName || 'evilevents')+'fromMaster',
+        pipeFileNameToMaster:(opts.pipeFileName || 'evilevents')+'ToMaster',
+        pipeFileNameFromMaster:(opts.pipeFileName || 'evilevents')+'FromMaster',
         pipePath:opts.pipePath || os.tmpdir(),
         tcpPortToMaster:tcpPortToMaster,
         tcpPortFromMaster:tcpPortFromMaster,
@@ -52,6 +52,21 @@ function parseOptions(opts) {
             opts.pipeFileNameFromMaster
         );
 
+    }
+
+    if (opts.transport === 'ipc') {
+        delete opts.pipeFileNameToMaster;
+        delete opts.pipePath;
+        delete opts.pipeFileNameFromMaster;
+        delete opts.tcpPortToMaster;
+        delete opts.tcpPortFromMaster;
+        delete opts.tcpIp
+    } else {
+        delete opts.pipePath;
+        delete opts.pipeFileNameToMaster;
+        delete opts.pipeFileNameFromMaster;
+        delete opts.pipeFileToMaster;
+        delete opts.pipeFileFromMaster;
     }
 
     return opts;
