@@ -24,8 +24,6 @@ function parseOptions(opts) {
 
     opts = extend(defaults, opts);
 
-    if (opts.verbose) console.log(opts);
-
     if (os.platform() === 'win32') {
 
         opts.pipeFileToMaster = path.join(
@@ -68,6 +66,8 @@ function parseOptions(opts) {
         delete opts.pipeFileToMaster;
         delete opts.pipeFileFromMaster;
     }
+
+    if (opts.verbose) console.log(opts);
 
     return opts;
 }
