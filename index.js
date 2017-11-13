@@ -19,13 +19,14 @@ evilevents.on = function(eventName, fnc) {
     _on.apply(evilevents, [eventName, fnc]);
 };
 
-evilevents.connect = client.connect;
-evilevents.disconnect = client.disconnect;
-
 if (cluster.isMaster) {
     evilevents.send = server.send;
+    evilevents.info = server.info;
 } else {
     evilevents.send = client.send;
+    evilevents.info = client.info;
+    evilevents.connect = client.connect;
+    evilevents.disconnect = client.disconnect;
 }
 
 evilevents.startServer = server.startServer;
