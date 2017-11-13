@@ -1,5 +1,5 @@
 {
-  "name": "evilevents",
+  "name": "evilev",
   "version": "1.0.3",
   "description": "A node.js module to handle event based Inter Processes Communication",
   "main": "index.js",
