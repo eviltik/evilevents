@@ -1,0 +1,39 @@
+{
+  "name": "evilevents",
+  "version": "1.0.0",
+  "description": "A node.js module to handle event based Inter Processes Communication",
+  "main": "index.js",
+  "scripts": {
+    "test": "node node_modules/tap/bin/run.js test/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eviltik/evilevents.git"
+  },
+  "keywords": [
+    "ipc",
+    "socket",
+    "message",
+    "queue",
+    "cluster",
+    "json",
+    "event"
+  ],
+  "author": "eviltik",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/eviltik/evilevents/issues"
+  },
+  "homepage": "https://github.com/eviltik/evilevents#readme",
+  "devDependencies": {
+    "async": "2.5.0",
+    "microtime": "2.1.6",
+    "pretty-size": "2.0.0",
+    "sprintf-js": "1.1.1",
+    "tap": "10.7.2"
+  },
+  "dependencies": {
+    "json-socket": "0.3.0",
+    "msgpack5-stream": "1.0.0"
+  }
+}
