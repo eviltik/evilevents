@@ -19,15 +19,16 @@ evilevents.on = function(eventName, fnc) {
     _on.apply(evilevents, [eventName, fnc]);
 };
 
-if (cluster.isMaster) {
+if (cluster.isMaster && !cluster.forceClient) {
     evilevents.send = server.send;
     evilevents.info = server.info;
 } else {
     evilevents.send = client.send;
     evilevents.info = client.info;
-    evilevents.connect = client.connect;
-    evilevents.disconnect = client.disconnect;
 }
+
+evilevents.connect = client.connect;
+evilevents.disconnect = client.disconnect;
 
 evilevents.startServer = server.startServer;
 evilevents.stopServer = server.stopServer;
