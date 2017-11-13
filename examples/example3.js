@@ -7,6 +7,9 @@ if (cluster.isMaster) {
 
         evilevents.on('foo',function(ev, data) {
             console.log(ev, data);
+            if (data.i === 10) {
+                process.exit();
+            }
         });
 
         cluster.fork({FORKNAME:'fork1'});
@@ -18,7 +21,7 @@ if (cluster.isMaster) {
 
     evilevents.connect({transport:'tcp', forkId:myName}, function() {
         let i = 1;
-        while (i<=10) evilevents.send('foo',{foo:'bar',i:++i});
+        while (i<=10) evilevents.send('foo',{foo:'bar',i:i++});
     });
 
 }
