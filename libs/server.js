@@ -179,7 +179,7 @@ function onClientConnected(socket, socketType) {
             if (clients[socket._forkId].quitting) {
                 // ECONNRESET, but worker said byebye before, so it's ok
             } else {
-                console.warn('master: client "%s" disconnected without saying byebye (%s)', socket._forkId, err.message);
+                VERBOSE && console.warn('master: client "%s" disconnected without saying byebye (%s)', socket._forkId, err.message);
 
             }
             delete clients[socket._forkId];
