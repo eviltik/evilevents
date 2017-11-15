@@ -41,7 +41,7 @@ function onDataReceive(data) {
 
     if (data.eventName) {
 
-        debug('onDataReceive: "%s": received data', options.forkId, JSON.stringify(data));
+        debug('onDataReceived: "%s": received data', options.forkId, JSON.stringify(data));
 
         ee.emit(
             data.eventName,
@@ -52,7 +52,7 @@ function onDataReceive(data) {
 
     } else if (data.hello) {
 
-        debug('onDataReceive: "%s": received hello ack on socket%s', options.forkId, this.type);
+        debug('onDataReceived: "%s": received hello ack on socket%s', options.forkId, this.type);
 
         connectCallback &&
         !connectCallback.alreadyFired &&
@@ -63,7 +63,7 @@ function onDataReceive(data) {
 
     } else if (data.byebye) {
 
-        debug('onDataReceive: "%s": received byebye ack on socket%s', options.forkId, this.type);
+        debug('onDataReceived: "%s": received byebye ack on socket%s', options.forkId, this.type);
 
         disconnectCallback &&
         !disconnectCallback.alreadyFired &&
