@@ -1,6 +1,6 @@
 {
   "name": "evilevents",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A node.js module to handle event based Inter Processes Communication",
   "main": "index.js",
   "scripts": {
@@ -26,11 +26,11 @@
   },
   "homepage": "https://github.com/eviltik/evilevents#readme",
   "devDependencies": {
-    "async": "2.5.0",
+    "async": "2.6.0",
     "microtime": "2.1.6",
     "pretty-size": "2.0.0",
     "sprintf-js": "1.1.1",
-    "tap": "10.7.2"
+    "tap": "10.7.3"
   },
   "dependencies": {
     "debug": "3.1.0",
