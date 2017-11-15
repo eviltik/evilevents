@@ -3,7 +3,7 @@ const evilevents = require('../index');
 
 if (cluster.isMaster) {
 
-    evilevents.startServer({transport:'tcp'},function() {
+    evilevents.server.start({transport:'tcp'},function() {
 
         evilevents.on('foo',function(ev, data) {
             console.log(ev, data);
@@ -19,9 +19,9 @@ if (cluster.isMaster) {
 
     let myName = process.env.FORKNAME;
 
-    evilevents.connect({transport:'tcp', forkId:myName}, function() {
+    evilevents.client.connect({transport:'tcp', forkId:myName}, function() {
         let i = 1;
-        while (i<=10) evilevents.send('foo',{foo:'bar',i:i++});
+        while (i<=10) evilevents.client.send('foo',{foo:'bar',i:i++});
     });
 
 }

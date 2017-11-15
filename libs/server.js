@@ -8,6 +8,7 @@ let options;
 let serverRead;
 let serverWrite;
 let write;
+let ee;
 
 function socketWrite(socket, data) {
 
@@ -49,7 +50,7 @@ function sendToEveryClients(eventName, payload) {
     debug('sendToEveryClients: %s', eventName);
 
     // ... including me !
-    evilevents.emit(eventName, eventName, payload);
+    ee.emit(eventName, eventName, payload);
 
     for (let forkId in clients) {
         sendToClient(forkId, eventName, payload);
@@ -61,7 +62,7 @@ function sendToClient(forkId, eventName, payload) {
     debug('sendToClient to %s %s', forkId, eventName);
 
     if (forkId === 'master') {
-        return evilevents.emit(eventName, eventName, payload);
+        return ee.emit(eventName, eventName, payload);
     }
 
     if (!clients[forkId]) {
@@ -215,7 +216,7 @@ function onClientConnected(socket, socketType) {
     }
 }
 
-function startServer(opts, callback) {
+function start(opts, callback) {
 
     if (typeof opts === 'function') {
         callback = opts;
@@ -235,7 +236,7 @@ function startServer(opts, callback) {
     if (options.transport === 'ipc') {
 
         debug(
-            'read: startServer: server listening to ipc %s',
+            'read: start: server listening to ipc %s',
             options.pipeFileToMaster
         );
 
@@ -244,7 +245,7 @@ function startServer(opts, callback) {
         });
 
         debug(
-            'write: startServer: server listening to ipc %s',
+            'write: start: server listening to ipc %s',
             options.pipeFileFromMaster
         );
 
@@ -256,7 +257,7 @@ function startServer(opts, callback) {
     } else if (options.transport === 'tcp') {
 
         debug(
-            'startServer: server listening (read on %s:%s)',
+            'start: server listening (read on %s:%s)',
             options.tcpIp,
             options.tcpPortToMaster
         );
@@ -266,7 +267,7 @@ function startServer(opts, callback) {
         });
 
         debug(
-            'startServer: server listening (write on %s:%s)',
+            'start: server listening (write on %s:%s)',
             options.tcpIp,
             options.tcpPortFromMaster
         );
@@ -282,11 +283,19 @@ function startServer(opts, callback) {
     }
 }
 
-function stopServer(callback) {
+function stop(callback) {
+
+    debug(
+        'stopping',
+        options.tcpIp,
+        options.tcpPortFromMaster
+    );
+
     for (let forkId in clients) {
         clients[forkId].writeSocket.end();
         clients[forkId].readSocket.end();
     }
+
     serverRead.close();
     serverWrite.close();
     callback();
@@ -312,11 +321,11 @@ function info() {
 }
 
 module.exports = function(s) {
-    evilevents = s;
+    ee = s;
     return {
-        startServer: startServer,
-        stopServer: stopServer,
-        send: send,
+        start:start,
+        stop:stop,
+        send:send,
         info:info
     }
 };

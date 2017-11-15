@@ -5,13 +5,13 @@ var max = 10;
 
 if (cluster.isMaster) {
 
-    evilevents.startServer({transport:'tcp'},function() {
+    evilevents.server.start({transport:'tcp'},function() {
 
         cluster
             .fork({FORKNAME:'fork1'})
             .on('exit', function () {
                 // not mandatory, just to be polite with forks
-                evilevents.stopServer(function() {
+                evilevents.server.stop(function() {
                     console.log('done !');
                 });
             });
@@ -19,7 +19,7 @@ if (cluster.isMaster) {
         // wait for fork to be connected ...
         setTimeout(function() {
             let i = 1;
-            while (i <= max) evilevents.send('foo', {foo: 'bar', i: i++});
+            while (i <= max) evilevents.server.send('foo', {foo: 'bar', i: i++});
         },200);
     });
 
@@ -32,13 +32,13 @@ if (cluster.isMaster) {
             console.log('all message received, exit fork !');
 
             // not mandatory, just to be polite with master
-            evilevents.disconnect(function() {
+            evilevents.client.disconnect(function() {
                 process.exit();
             })
         }
     });
 
-    evilevents.connect({transport:'tcp', forkId:myName}, function() {
+    evilevents.client.connect({transport:'tcp', forkId:myName}, function() {
         console.log('connected !');
     });
 

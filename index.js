@@ -1,38 +1,24 @@
 const EventEmitter = require('events').EventEmitter;
-const evilevents = new EventEmitter();
+const ee = new EventEmitter();
 const cluster = require('cluster');
 
-const server = require('./libs/server')(evilevents);
-const client = require('./libs/client')(evilevents);
+const _on = ee.on;
 
-const _on = evilevents.on;
+ee.server = require('./libs/server')(ee);
+ee.client = require('./libs/client')(ee);
 
-evilevents.on = function(eventName, fnc) {
+ee.on = function(eventName, fnc) {
 
     if (typeof eventName == 'object') {
         eventName.forEach(function (e) {
-            _on.apply(evilevents, [Object.keys(e)[0], e[Object.keys(e)[0]]]);
+            _on.apply(ee, [Object.keys(e)[0], e[Object.keys(e)[0]]]);
         });
         return;
     }
 
-    _on.apply(evilevents, [eventName, fnc]);
+    _on.apply(ee, [eventName, fnc]);
 };
 
-if (cluster.isMaster && !cluster.forceClient) {
-    evilevents.send = server.send;
-    evilevents.info = server.info;
-} else {
-    evilevents.send = client.send;
-    evilevents.info = client.info;
-}
-
-evilevents.connect = client.connect;
-evilevents.disconnect = client.disconnect;
-
-evilevents.startServer = server.startServer;
-evilevents.stopServer = server.stopServer;
-
-module.exports = evilevents;
+module.exports = ee;
 
 

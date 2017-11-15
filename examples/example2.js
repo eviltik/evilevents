@@ -7,7 +7,7 @@ const evilevents = require('../index');
 
 if (cluster.isMaster) {
 
-    evilevents.startServer(function() {
+    evilevents.server.start(function() {
 
         cluster.fork({FORKNAME:'fork1'});
 
@@ -17,8 +17,8 @@ if (cluster.isMaster) {
                 setTimeout(next,200);
             },
             function(next) {
-                evilevents.send("eventOne", {test1: "value1"});
-                evilevents.send("eventTwo", {test2: "value2"});
+                evilevents.server.send("eventOne", {test1: "value1"});
+                evilevents.server.send("eventTwo", {test2: "value2"});
                 setTimeout(next,200);
             },
             function(next) {
@@ -35,7 +35,7 @@ if (cluster.isMaster) {
 
     var myName = process.env.FORKNAME;
 
-    evilevents.connect({forkId:myName}, function() {
+    evilevents.client.connect({forkId:myName}, function() {
 
         evilevents.on([
             {'eventOne':outputEvent},

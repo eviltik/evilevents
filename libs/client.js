@@ -11,7 +11,7 @@ let pipeWrite;
 let pipeRead;
 let connectCallback;
 let disconnectCallback;
-let evilevents;
+let ee;
 let drain = false;
 
 function sendToMaster(socket, data) {
@@ -43,7 +43,7 @@ function onDataReceive(data) {
 
         debug('onDataReceive: "%s": received data', options.forkId, JSON.stringify(data));
 
-        evilevents.emit(
+        ee.emit(
             data.eventName,
             data.eventName,
             data.payload
@@ -178,7 +178,7 @@ function send(eventName, payload) {
 
     // a fork is sending a message to itself
     if (t.length>1 && t[0] === options.forkId) {
-        return evilevents.emit(t[1], eventName, payload);
+        return ee.emit(t[1], eventName, payload);
     }
 
     // a fork is sending a message, push it to the master,
@@ -218,7 +218,7 @@ function info() {
 }
 
 module.exports = function(s) {
-    evilevents = s;
+    ee = s;
     return {
         connect:connect,
         disconnect:disconnect,

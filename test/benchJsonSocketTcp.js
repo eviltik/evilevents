@@ -17,7 +17,7 @@ if (cluster.isMaster) {
 
     tap.test('TCP/json-socket bench',function(t) {
 
-        evilevents.startServer({
+        evilevents.server.start({
             transport: transport,
             pipeFileName: 'sockqmbench',
             msgpack: msgpack,
@@ -31,7 +31,7 @@ if (cluster.isMaster) {
                 .on('exit', function () {
                     t.pass('exit');
                     t.end();
-                    evilevents.stopServer(process.exit);
+                    evilevents.server.stop(process.exit);
                 })
                 .on('message', function(message) {
                     t.pass(message);
@@ -51,7 +51,7 @@ if (cluster.isMaster) {
         if (received < max) {
             setTimeout(waitForAllEventsReceived, 100);
         } else {
-            evilevents.disconnect(function () {
+            evilevents.client.disconnect(function () {
                 timeEnd = microtime.now();
                 timeDiff = (timeEnd - timeStart) / 1000000;
                 process.send(sprintf('%s: %s events received back', myName, received));
@@ -65,7 +65,7 @@ if (cluster.isMaster) {
         received++;
     });
 
-    evilevents.connect(
+    evilevents.client.connect(
         {
             transport: myName,
             forkId: myName,
@@ -87,7 +87,7 @@ if (cluster.isMaster) {
 
             while (i < max) {
                 d = {foo: 'bar', i: ++i};
-                dataSent += evilevents.send('foo', d);
+                dataSent += evilevents.client.send('foo', d);
             }
 
             timeEnd = microtime.now();
