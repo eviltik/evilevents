@@ -217,6 +217,8 @@ function start(opts, callback) {
         opts = {};
     }
 
+    process.on('exit', stop);
+
     options = require('./options')(opts);
 
     serverRead = net.createServer((socket) => {
@@ -292,7 +294,7 @@ function stop(callback) {
 
     serverRead.close();
     serverWrite.close();
-    callback();
+    callback && callback();
 
     return;
 }
