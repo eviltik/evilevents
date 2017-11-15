@@ -1,8 +1,7 @@
 const net = require('net');
 const msgpack = require('msgpack5-stream');
 const JsonSocket = require('json-socket');
-
-let VERBOSE = false;
+const debug = require('debug')('evilevents:client');
 
 let options;
 let socket;
@@ -16,9 +15,20 @@ let evilevents;
 let drain = false;
 
 function sendToMaster(socket, data) {
-    VERBOSE && console.log('worker "%s" => master: writing %s', options.forkId, JSON.stringify(data));
+    if (!socket) {
+        debug(
+            'sendToMaster: worker "%s" => master: can not write (no socket) %s',
+            options.forkId,
+            JSON.stringify(data)
+        );
+        return;
+    }
 
-    if (!socket) return;
+    debug(
+        'sendToMaster: worker "%s" => master: writing %s',
+        options.forkId,
+        JSON.stringify(data)
+    );
 
     if (socket.sendMessage) {
         socket.sendMessage(data);
@@ -31,7 +41,7 @@ function onDataReceive(data) {
 
     if (data.eventName) {
 
-        VERBOSE && console.info('worker "%s": received data', options.forkId, JSON.stringify(data));
+        debug('onDataReceive: "%s": received data', options.forkId, JSON.stringify(data));
 
         evilevents.emit(
             data.eventName,
@@ -42,7 +52,7 @@ function onDataReceive(data) {
 
     } else if (data.hello) {
 
-        VERBOSE && console.info('worker "%s": received hello ack', options.forkId);
+        debug('onDataReceive: "%s": received hello ack on socket%s', options.forkId, this.type);
 
         connectCallback &&
         !connectCallback.alreadyFired &&
@@ -53,7 +63,7 @@ function onDataReceive(data) {
 
     } else if (data.byebye) {
 
-        VERBOSE && console.info('worker "%s": received byebye ack', options.forkId);
+        debug('onDataReceive: "%s": received byebye ack on socket%s', options.forkId, this.type);
 
         disconnectCallback &&
         !disconnectCallback.alreadyFired &&
@@ -68,10 +78,67 @@ function onDataReceive(data) {
         return;
     }
 
+    //@todo: emit error ?
     console.warn('"%s" received an invalid message: %s', options.forkId, JSON.stringify(data));
 
     return;
 
+}
+
+function onSocketWriteDrain() {
+    debug('write: onSocketWriteDrain', options.forkId);
+}
+
+function onSocketReadDrain() {
+    debug('read: onSocketWriteDrain', options.forkId);
+}
+
+function onSocketWriteError(err, callback) {
+    debug('write: onSocketWriteError: worker "%s": error while connecting to the server: %s', options.forkId, err.message);
+    callback && callback(err);
+}
+
+function onSocketReadError(err, callback) {
+    debug('read: onSocketReadError: worker "%s": error while connecting to the server: %s', options.forkId, err.message);
+    callback && callback(err);
+}
+
+function onSocketWriteConnect() {
+    if (options.msgpack) {
+        pipeWrite = msgpack(socketWrite);
+        pipeWrite.on('data', onDataReceive.bind(socketWrite));
+    } else {
+        pipeWrite = socketWrite;
+        pipeWrite.on('message', onDataReceive.bind(socketWrite));
+    }
+
+    debug('write: onSocketWriteConnect: worker "%s": connected to master', options.forkId);
+
+    sendToMaster(pipeWrite,{
+        hello: options.forkId,
+        type: "writer",
+        pid: process.pid
+    });
+}
+
+function onSocketReadConnect(callback) {
+    if (options.msgpack) {
+        pipeRead = msgpack(socketRead);
+        pipeRead.on('data', onDataReceive.bind(socketRead));
+    } else {
+        pipeRead = socketRead;
+        pipeRead.on('message', onDataReceive.bind(socketRead));
+    }
+
+    connectCallback = callback;
+
+    debug('read: onSocketReadConnect: worker "%s": connected to master', options.forkId);
+
+    sendToMaster(pipeRead,{
+        hello: options.forkId,
+        type: "reader",
+        pid: process.pid
+    });
 }
 
 function connectToMasterProcess(callback) {
@@ -84,6 +151,9 @@ function connectToMasterProcess(callback) {
         socketRead = new JsonSocket(new net.Socket());
     }
 
+    socketWrite.type = 'write';
+    socketRead.type = 'read';
+
     if (options.transport === 'ipc') {
         socketWrite.connect(options.pipeFileToMaster);
         socketRead.connect(options.pipeFileFromMaster);
@@ -92,61 +162,14 @@ function connectToMasterProcess(callback) {
         socketRead.connect(options.tcpPortFromMaster, options.tcpIp);
     }
 
-    socketWrite.on('drain',function() {
-        VERBOSE && console.log('%s: socketWrite drain', options.forkId);
-    });
+    socketWrite.on('drain',onSocketWriteDrain);
+    socketRead.on('drain',onSocketReadDrain);
 
-    socketRead.on('drain',function() {
-        VERBOSE && console.log('%s: socketRead drain', options.forkId);
-    });
+    socketWrite.on('error',(err) => {onSocketWriteError(err, callback);});
+    socketRead.on('error',(err) => {onSocketReadError(err, callback);});
 
-    socketWrite.on('error',function(err) {
-        VERBOSE && console.error('worker "%s": error while connecting to the server', err.message);
-        return callback(err);
-    });
-
-    socketRead.on('error',function(err) {
-        VERBOSE && console.error('worker "%s": error while connecting to the server', err.message);
-        return callback(err);
-    });
-
-    socketWrite.on('connect',function() {
-        if (options.msgpack) {
-            pipeWrite = msgpack(socketWrite);
-            pipeWrite.on('data', onDataReceive);
-        } else {
-            pipeWrite = socketWrite;
-            pipeWrite.on('message', onDataReceive);
-        }
-
-        VERBOSE && console.log('worker "%s": write socket connected to master (write)', options.forkId);
-
-        sendToMaster(pipeWrite,{
-            hello: options.forkId,
-            type: "writer",
-            pid: process.pid
-        });
-    });
-
-    socketRead.on('connect',function() {
-        if (options.msgpack) {
-            pipeRead = msgpack(socketRead);
-            pipeRead.on('data', onDataReceive);
-        } else {
-            pipeRead = socketRead;
-            pipeRead.on('message', onDataReceive);
-        }
-
-        connectCallback = callback;
-
-        VERBOSE && console.log('worker "%s": read socket connected to master (read)', options.forkId);
-
-        sendToMaster(pipeRead,{
-            hello: options.forkId,
-            type: "reader",
-            pid: process.pid
-        });
-    });
+    socketWrite.on('connect',() => {onSocketWriteConnect(callback);});
+    socketRead.on('connect',() => {onSocketReadConnect(callback);});
 }
 
 function send(eventName, payload) {
@@ -159,7 +182,6 @@ function send(eventName, payload) {
     }
 
     // a fork is sending a message, push it to the master,
-
     let rpayload = {eventName: eventName, payload: payload};
     sendToMaster(pipeWrite, rpayload);
     return JSON.stringify(rpayload).length;
@@ -173,7 +195,6 @@ function connect(opts, callback) {
     }
 
     options = require('./options')(opts);
-    VERBOSE = options.verbose;
     connectToMasterProcess(callback);
 }
 

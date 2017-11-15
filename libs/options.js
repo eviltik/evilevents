@@ -1,6 +1,7 @@
 const extend = require('util')._extend;
 const os = require('os');
 const path = require('path');
+const debug = require('debug')('evilevents:options');
 
 const tcpPortToMaster = 10555;
 const tcpPortFromMaster = 10556;
@@ -67,7 +68,7 @@ function parseOptions(opts) {
         delete opts.pipeFileFromMaster;
     }
 
-    if (opts.verbose) console.log(opts);
+    //debug(JSON.stringify(opts));
 
     return opts;
 }

@@ -1,8 +1,7 @@
 const net = require('net');
 const msgpack = require('msgpack5-stream');
 const JsonSocket = require('json-socket');
-
-let VERBOSE = false;
+const debug = require('debug')('evilevents:server');
 
 let clients = {};
 let options;
@@ -11,22 +10,29 @@ let serverWrite;
 let write;
 
 function socketWrite(socket, data) {
-    if (VERBOSE) {
-        if (options.forkId) {
-            console.log(
-                'worker %s => (socket %s) master: writing %s',
-                options.forkId,
-                socket._type,
-                JSON.stringify(data)
-            );
-        } else {
-            console.log(
-                'master => %s: (socket %s) writing %s',
-                socket._forkId,
-                socket._type,
-                JSON.stringify(data)
-            );
-        }
+
+    if (!socket) {
+        debug(
+            'socketWrite: worker "%s" => master: can not write (no socket) %s',
+            options.forkId,
+            JSON.stringify(data)
+        );
+        return;
+    }
+    if (options.forkId) {
+        debug(
+            'socketWrite: worker %s => (socket %s) master: writing %s',
+            options.forkId,
+            socket.type,
+            JSON.stringify(data)
+        );
+    } else {
+        debug(
+            'socketWrite: master => %s: (socket %s) writing %s',
+            socket._forkId,
+            socket.type,
+            JSON.stringify(data)
+        );
     }
 
     if (socket.sendMessage) {
@@ -40,6 +46,8 @@ function socketWrite(socket, data) {
 
 function sendToEveryClients(eventName, payload) {
 
+    debug('sendToEveryClients: %s', eventName);
+
     // ... including me !
     evilevents.emit(eventName, eventName, payload);
 
@@ -50,6 +58,8 @@ function sendToEveryClients(eventName, payload) {
 
 function sendToClient(forkId, eventName, payload) {
 
+    debug('sendToClient to %s %s', forkId, eventName);
+
     if (forkId === 'master') {
         return evilevents.emit(eventName, eventName, payload);
     }
@@ -57,8 +67,6 @@ function sendToClient(forkId, eventName, payload) {
     if (!clients[forkId]) {
         return;
     }
-
-    VERBOSE && console.log('master: sendingToClient %s to "%s"', JSON.stringify(payload), forkId);
 
     socketWrite(clients[forkId].readSocket,{
         eventName:eventName,
@@ -68,13 +76,14 @@ function sendToClient(forkId, eventName, payload) {
 }
 
 function onSocketClose() {
+    debug('onSocketClose: delete %s',this._forkId);
     delete clients[this._forkId];
 }
 
 function onDataReceived(data) {
 
-    VERBOSE && console.log(
-        "master: data received on socket %s",
+    debug(
+        "onDataReceived: data received on socket %s",
         this.socket.type,
         JSON.stringify(data)
     );
@@ -99,13 +108,14 @@ function onDataReceived(data) {
         // first message sent by the worker
         // store the socket
 
-        VERBOSE && console.log('master: hello from worker "%s"', data.hello);
+        debug(
+            'onDataReceived: hello from worker "%s" on socket',
+            data.hello,
+            this.socket.type
+        );
 
         this.socket._forkId = data.hello;
         this.dup._forkId = data.hello;
-
-        this.socket._type = data.type;
-        this.dup._type = data.type;
 
         if (!clients[data.hello]) {
             clients[data.hello] = {};
@@ -113,17 +123,15 @@ function onDataReceived(data) {
 
         if (data.type === "writer") {
             clients[data.hello].writeSocket = this.dup;
-            this.socket._type = this.dup._type = "writer";
         } else if (data.type === "reader") {
             clients[data.hello].readSocket = this.dup;
-            this.socket._type = this.dup._type = "reader";
         }
         socketWrite(this.dup,{hello: true});
         return;
 
     } else if (data.byebye) {
 
-        VERBOSE && console.log('master: byebye from worker "%s"', this.socket._forkId);
+        debug('onDataReceived: byebye from worker "%s"', this.socket._forkId);
         clients[this.socket._forkId].quitting = true;
         socketWrite(this.dup,{byebye: true});
         //clients[this._forkId].flush();
@@ -136,41 +144,39 @@ function onDataReceived(data) {
 
 function onClientConnected(socket, socketType) {
 
-    if (VERBOSE) {
+    debug(
+        '%s: onClientConnected: client connected',
+        socketType
+    );
 
-        console.info(
-            'master: client connected (%s) on socket %s',
-            options.transport,
-            socketType
-        );
+    /*
+    socket.on('drain',function() {
+        console.log('master: socket %s drain',socket._forkId);
+        socketWrite(clients[socket._forkId].writeSocket,{drain:true});
+    });
+    */
 
-        socket.on('drain',function() {
-            console.log('master: socket %s drain',socket._forkId);
-            socketWrite(clients[socket._forkId].writeSocket,{drain:true});
-        });
-
-        /*
-        setInterval(function () {
-            if (this._type.match(/writer/)) {
-                console.log("%s: %s => %s bytes read", this._forkId, this._type, this.bytesRead);
-            } else {
-                console.log("%s: %s => %s bytes written", this._forkId, this._type, this.bytesWritten);
-            }
-        }.bind(socket), 1000);
-        */
-    }
+    /*
+    setInterval(function () {
+        if (this._type.match(/writer/)) {
+            console.log("%s: %s => %s bytes read", this._forkId, this._type, this.bytesRead);
+        } else {
+            console.log("%s: %s => %s bytes written", this._forkId, this._type, this.bytesWritten);
+        }
+    }.bind(socket), 1000);
+    */
 
     socket.on('close', onSocketClose);
 
     socket.on('error', (err) => {
 
         if (!socket._forkId) {
-            VERBOSE && console.error('socket error, but no _forkId');
+            debug('onClientConnected/socket error, exiting (no _forkId)');
             return;
         }
 
         if (!clients[socket._forkId]) {
-            VERBOSE && console.error('socket error, but client already removed');
+            debug('onClientConnected/socket error, exiting (client already removed)');
             return;
         }
 
@@ -178,13 +184,21 @@ function onClientConnected(socket, socketType) {
 
             if (clients[socket._forkId].quitting) {
                 // ECONNRESET, but worker said byebye before, so it's ok
+                debug('onClientConnected/socket error, clean exit');
             } else {
-                VERBOSE && console.warn('master: client "%s" disconnected without saying byebye (%s)', socket._forkId, err.message);
-
+                debug(
+                    'onClientConnected/socket error, unclean exit (no byebye) from %s, %s',
+                    socket._forkId,
+                    err.message
+                );
             }
             delete clients[socket._forkId];
         } else {
-            console.info('master: client "%s" socket error (%s)', socket._forkId, err.message);
+            debug(
+                'onClientConnected/socket error: unexpected socket error (%s) from ',
+                err.message,
+                socket._forkId
+            );
         }
     });
 
@@ -209,7 +223,6 @@ function startServer(opts, callback) {
     }
 
     options = require('./options')(opts);
-    VERBOSE = options.verbose;
 
     serverRead = net.createServer((socket) => {
         onClientConnected(socket,'read');
@@ -222,8 +235,8 @@ function startServer(opts, callback) {
     if (options.transport === 'ipc') {
 
         serverRead.listen(options.pipeFileToMaster, function(err) {
-            VERBOSE && console.info(
-                'master: server listening to ipc %s',
+            debug(
+                'read: startServer: server listening to ipc %s',
                 options.pipeFileToMaster
             );
 
@@ -231,8 +244,8 @@ function startServer(opts, callback) {
         });
 
         serverWrite.listen(options.pipeFileFromMaster, function(err) {
-            VERBOSE && console.info(
-                'master: server listening to ipc %s',
+            debug(
+                'write: startServer: server listening to ipc %s',
                 options.pipeFileFromMaster
             );
 
@@ -243,8 +256,8 @@ function startServer(opts, callback) {
     } else if (options.transport === 'tcp') {
 
         serverRead.listen(options.tcpPortToMaster, options.tcpIp, function(err) {
-            VERBOSE && console.info(
-                'master: server listening (read on %s:%s)',
+            debug(
+                'startServer: server listening (read on %s:%s)',
                 options.tcpIp,
                 options.tcpPortToMaster
             );
@@ -254,8 +267,8 @@ function startServer(opts, callback) {
 
         serverWrite.listen(options.tcpPortFromMaster, options.tcpIp, function(err) {
             if (err) return callback(err);
-            VERBOSE && console.info(
-                'master: server listening (write on %s:%s)',
+            debug(
+                'startServer: server listening (write on %s:%s)',
                 options.tcpIp,
                 options.tcpPortFromMaster
             );
