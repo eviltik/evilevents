@@ -234,45 +234,45 @@ function startServer(opts, callback) {
 
     if (options.transport === 'ipc') {
 
-        serverRead.listen(options.pipeFileToMaster, function(err) {
-            debug(
-                'read: startServer: server listening to ipc %s',
-                options.pipeFileToMaster
-            );
+        debug(
+            'read: startServer: server listening to ipc %s',
+            options.pipeFileToMaster
+        );
 
+        serverRead.listen(options.pipeFileToMaster, function(err) {
             if (err) return callback && callback(err)
         });
 
-        serverWrite.listen(options.pipeFileFromMaster, function(err) {
-            debug(
-                'write: startServer: server listening to ipc %s',
-                options.pipeFileFromMaster
-            );
+        debug(
+            'write: startServer: server listening to ipc %s',
+            options.pipeFileFromMaster
+        );
 
+        serverWrite.listen(options.pipeFileFromMaster, function(err) {
             if (err) return callback && callback(err);
             return callback && callback();
         });
 
     } else if (options.transport === 'tcp') {
 
-        serverRead.listen(options.tcpPortToMaster, options.tcpIp, function(err) {
-            debug(
-                'startServer: server listening (read on %s:%s)',
-                options.tcpIp,
-                options.tcpPortToMaster
-            );
+        debug(
+            'startServer: server listening (read on %s:%s)',
+            options.tcpIp,
+            options.tcpPortToMaster
+        );
 
+        serverRead.listen(options.tcpPortToMaster, options.tcpIp, function(err) {
             if (err) return callback && callback(err);
         });
 
+        debug(
+            'startServer: server listening (write on %s:%s)',
+            options.tcpIp,
+            options.tcpPortFromMaster
+        );
+
         serverWrite.listen(options.tcpPortFromMaster, options.tcpIp, function(err) {
             if (err) return callback(err);
-            debug(
-                'startServer: server listening (write on %s:%s)',
-                options.tcpIp,
-                options.tcpPortFromMaster
-            );
-
             return callback && callback();
         });
 
