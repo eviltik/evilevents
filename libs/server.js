@@ -38,7 +38,7 @@ function socketWrite(socket, data) {
 
     if (socket.sendMessage) {
         if (!socket.sendMessage(data)) {
-
+            //@todo
         }
     } else {
         socket.write(data);
@@ -205,8 +205,6 @@ function onClientConnected(socket, socketType) {
 
     let dup;
 
-    socket.type = socketType;
-
     if (options.msgpack) {
         dup = msgpack(socket);
         dup.on("data",onDataReceived.bind({dup:dup,socket:socket}));
@@ -214,6 +212,9 @@ function onClientConnected(socket, socketType) {
         dup = new JsonSocket(socket);
         dup.on("message",onDataReceived.bind({dup:dup,socket:socket}));
     }
+
+    dup.type = socketType;
+    socket.type = socketType;
 }
 
 function start(opts, callback) {
