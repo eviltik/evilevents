@@ -20,21 +20,13 @@ function socketWrite(socket, data) {
         );
         return;
     }
-    if (options.forkId) {
-        debug(
-            'socketWrite: worker %s => (socket %s) master: writing %s',
-            options.forkId,
-            socket.type,
-            JSON.stringify(data)
-        );
-    } else {
-        debug(
-            'socketWrite: master => %s: (socket %s) writing %s',
-            socket._forkId,
-            socket.type,
-            JSON.stringify(data)
-        );
-    }
+
+    debug(
+        '%s: socketWrite: master => %s: %s',
+        socket.type,
+        socket._forkId,
+        JSON.stringify(data)
+    );
 
     if (socket.sendMessage) {
         if (!socket.sendMessage(data)) {
@@ -59,7 +51,7 @@ function sendToEveryClients(eventName, payload) {
 
 function sendToClient(forkId, eventName, payload) {
 
-    debug('sendToClient to %s %s', forkId, eventName);
+    debug('sendToClient: sending %s to %s', eventName, forkId);
 
     if (forkId === 'master') {
         return ee.emit(eventName, eventName, payload);
@@ -84,7 +76,7 @@ function onSocketClose() {
 function onDataReceived(data) {
 
     debug(
-        "onDataReceived: data received on socket %s",
+        "%s: onDataReceived: %s",
         this.socket.type,
         JSON.stringify(data)
     );
@@ -106,14 +98,15 @@ function onDataReceived(data) {
 
     } else if (data.hello) {
 
-        // first message sent by the worker
-        // store the socket
+        // first message sent by the client
 
+        /*
         debug(
             'onDataReceived: hello from worker "%s" on socket',
             data.hello,
             this.socket.type
         );
+        */
 
         this.socket._forkId = data.hello;
         this.dup._forkId = data.hello;
@@ -122,9 +115,9 @@ function onDataReceived(data) {
             clients[data.hello] = {};
         }
 
-        if (data.type === "writer") {
+        if (this.socket.type === 'write') {
             clients[data.hello].writeSocket = this.dup;
-        } else if (data.type === "reader") {
+        } else if (this.socket.type === 'read') {
             clients[data.hello].readSocket = this.dup;
         }
         socketWrite(this.dup,{hello: true});
@@ -132,7 +125,7 @@ function onDataReceived(data) {
 
     } else if (data.byebye) {
 
-        debug('onDataReceived: byebye from worker "%s"', this.socket._forkId);
+        //debug('onDataReceived: byebye from worker "%s"', this.socket._forkId);
         clients[this.socket._forkId].quitting = true;
         socketWrite(this.dup,{byebye: true});
         //clients[this._forkId].flush();

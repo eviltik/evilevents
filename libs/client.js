@@ -41,7 +41,12 @@ function onDataReceive(data) {
 
     if (data.eventName) {
 
-        debug('onDataReceived: "%s": received data', options.forkId, JSON.stringify(data));
+        debug(
+            '%s: onDataReceived: "%s": received data',
+            this.type,
+            options.forkId,
+            JSON.stringify(data)
+        );
 
         ee.emit(
             data.eventName,
@@ -52,7 +57,11 @@ function onDataReceive(data) {
 
     } else if (data.hello) {
 
-        debug('onDataReceived: "%s": received hello ack on socket%s', options.forkId, this.type);
+        debug(
+            '%s: onDataReceived: "%s": received hello ack',
+            this.type,
+            options.forkId
+        );
 
         connectCallback &&
         !connectCallback.alreadyFired &&
@@ -63,7 +72,11 @@ function onDataReceive(data) {
 
     } else if (data.byebye) {
 
-        debug('onDataReceived: "%s": received byebye ack on socket%s', options.forkId, this.type);
+        debug(
+            '%s: onDataReceived: "%s": received byebye ack',
+            this.type,
+            options.forkId
+        );
 
         disconnectCallback &&
         !disconnectCallback.alreadyFired &&
@@ -116,7 +129,6 @@ function onSocketWriteConnect() {
 
     sendToMaster(pipeWrite,{
         hello: options.forkId,
-        type: "writer",
         pid: process.pid
     });
 }
@@ -136,7 +148,6 @@ function onSocketReadConnect(callback) {
 
     sendToMaster(pipeRead,{
         hello: options.forkId,
-        type: "reader",
         pid: process.pid
     });
 }
