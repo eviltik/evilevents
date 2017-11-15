@@ -18,6 +18,8 @@ let drain = false;
 function sendToMaster(socket, data) {
     VERBOSE && console.log('worker "%s" => master: writing %s', options.forkId, JSON.stringify(data));
 
+    if (!socket) return;
+
     if (socket.sendMessage) {
         socket.sendMessage(data);
     } else {
