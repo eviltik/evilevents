@@ -19,6 +19,7 @@ ee.on = function(eventName, fnc) {
     _on.apply(ee, [eventName, fnc]);
 };
 
+cluster.onEvent = ee.on;
+cluster.sendEvent = ee.client.send;
+
 module.exports = ee;
-
-
