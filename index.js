@@ -1,6 +1,5 @@
 const EventEmitter = require('events').EventEmitter;
 const ee = new EventEmitter();
-const cluster = require('cluster');
 
 const _on = ee.on;
 
