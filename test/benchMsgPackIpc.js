@@ -1,67 +1,69 @@
 const cluster = require('cluster');
-const path = require('path');
-const net = require('net');
-const {prettySize} = require('pretty-size');
+const { prettySize } = require('pretty-size');
 const microtime = require('microtime');
 const tap = require('tap');
 const sprintf = require('sprintf-js').sprintf;
 
 const evilevents = require('../index');
 
-let max = 1000;
-let msgpack = true;
-let verbose = false;
-let transport = 'ipc';
+const max = 1000;
+const msgpack = true;
+const verbose = false;
+const transport = 'ipc';
+
+
+const myName = process.env.FORKNAME;
+let received = 0;
+let dataSent;
+let i, d;
+let timeStart, timeEnd, timeDiff;
+
+function waitForAllEventsReceived() {
+    if (received < max) {
+        setTimeout(waitForAllEventsReceived, 100);
+    } else {
+        evilevents.client.disconnect(() => {
+            timeEnd = microtime.now();
+            timeDiff = (timeEnd - timeStart) / 1000000;
+            process.send(sprintf('%s: %s events received back', myName, received));
+            process.send(sprintf('%s: recv avg speed %s/s', myName, prettySize(Math.round(dataSent / timeDiff), true)));
+            process.exit();
+        });
+    }
+}
+
 
 if (cluster.isMaster) {
 
-    tap.test('IPC/msgpack5-stream bench',function(t) {
+    tap.test('IPC/msgpack5-stream bench', (t) => {
 
         evilevents.server.start({
-            transport: transport,
+            transport,
             pipeFileName: 'sockqmbench',
-            msgpack: msgpack,
-            verbose: verbose
-        }, function(err) {
+            msgpack,
+            verbose
+        }, (err) => {
 
             if (err) throw new Error(err);
 
             cluster
-                .fork({FORKNAME: transport})
-                .on('exit', function () {
+                .fork({ FORKNAME: transport })
+                .on('exit', () => {
                     t.pass('exit');
                     t.end();
-                    evilevents.server.stop(process.exit);
+                    evilevents.server.stop(() => {
+                        process.exit();
+                    });
                 })
-                .on('message', function(message) {
+                .on('message', (message) => {
                     t.pass(message);
-                })
+                });
         });
     });
 
 } else {
 
-    let myName = process.env.FORKNAME;
-    let received = 0;
-    let dataSent;
-    let i, d;
-    let timeStart, timeEnd, timeDiff;
-
-    function waitForAllEventsReceived() {
-        if (received < max) {
-            setTimeout(waitForAllEventsReceived, 100);
-        } else {
-            evilevents.client.disconnect(function () {
-                timeEnd = microtime.now();
-                timeDiff = (timeEnd - timeStart) / 1000000;
-                process.send(sprintf('%s: %s events received back', myName, received));
-                process.send(sprintf('%s: recv avg speed %s/s', myName, prettySize(Math.round(dataSent / timeDiff), true)));
-                process.exit();
-            });
-        }
-    }
-
-    evilevents.on('foo', function () {
+    evilevents.on('foo', () => {
         received++;
     });
 
@@ -70,10 +72,10 @@ if (cluster.isMaster) {
             transport: myName,
             forkId: myName,
             pipeFileName: 'sockqmbench',
-            msgpack: msgpack,
-            verbose: verbose
+            msgpack,
+            verbose
         },
-        function (err) {
+        (err) => {
 
             process.send('connected');
 
@@ -86,7 +88,7 @@ if (cluster.isMaster) {
             timeStart = microtime.now();
 
             while (i < max) {
-                d = {foo: 'bar', i: ++i};
+                d = { foo: 'bar', i: ++i };
                 dataSent += evilevents.client.send('foo', d);
             }
 
@@ -101,7 +103,7 @@ if (cluster.isMaster) {
         }
     );
 
-    evilevents.on('error', function (err) {
+    evilevents.on('error', (err) => {
         console.log(err);
     });
 

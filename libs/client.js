@@ -4,7 +4,6 @@ const JsonSocket = require('json-socket');
 const debug = require('debug')('evilevents:client');
 
 let options;
-let socket;
 let socketWrite;
 let socketRead;
 let pipeWrite;
@@ -12,7 +11,6 @@ let pipeRead;
 let connectCallback;
 let disconnectCallback;
 let ee;
-let drain = false;
 
 function sendToMaster(socket, data) {
     if (!socket) {
@@ -86,8 +84,6 @@ function onDataReceive(data) {
         return;
 
     } else if (data.drain) {
-
-        drain = data.drain;
         return;
     }
 
@@ -127,7 +123,7 @@ function onSocketWriteConnect() {
 
     debug('write: onSocketWriteConnect: worker "%s": connected to master', options.forkId);
 
-    sendToMaster(pipeWrite,{
+    sendToMaster(pipeWrite, {
         hello: options.forkId,
         pid: process.pid
     });
@@ -146,7 +142,7 @@ function onSocketReadConnect(callback) {
 
     debug('read: onSocketReadConnect: worker "%s": connected to master', options.forkId);
 
-    sendToMaster(pipeRead,{
+    sendToMaster(pipeRead, {
         hello: options.forkId,
         pid: process.pid
     });
@@ -173,19 +169,19 @@ function connectToMasterProcess(callback) {
         socketRead.connect(options.tcpPortFromMaster, options.tcpIp);
     }
 
-    socketWrite.on('drain',onSocketWriteDrain);
-    socketRead.on('drain',onSocketReadDrain);
+    socketWrite.on('drain', onSocketWriteDrain);
+    socketRead.on('drain', onSocketReadDrain);
 
-    socketWrite.on('error',(err) => {onSocketWriteError(err, callback);});
-    socketRead.on('error',(err) => {onSocketReadError(err, callback);});
+    socketWrite.on('error', err => {onSocketWriteError(err, callback);});
+    socketRead.on('error', err => {onSocketReadError(err, callback);});
 
-    socketWrite.on('connect',() => {onSocketWriteConnect(callback);});
-    socketRead.on('connect',() => {onSocketReadConnect(callback);});
+    socketWrite.on('connect', () => {onSocketWriteConnect(callback);});
+    socketRead.on('connect', () => {onSocketReadConnect(callback);});
 }
 
 function send(eventName, payload) {
 
-    let t = eventName.split(':');
+    const t = eventName.split(':');
 
     // a fork is sending a message to itself
     if (t.length>1 && t[0] === options.forkId) {
@@ -193,7 +189,7 @@ function send(eventName, payload) {
     }
 
     // a fork is sending a message, push it to the master,
-    let rpayload = {eventName: eventName, payload: payload};
+    const rpayload = { eventName, payload };
     sendToMaster(pipeWrite, rpayload);
     return JSON.stringify(rpayload).length;
 }
@@ -213,13 +209,13 @@ function disconnect(callback) {
 
     disconnectCallback = callback;
 
-    sendToMaster(pipeWrite,{byebye: true});
-    sendToMaster(pipeRead,{byebye: true});
+    sendToMaster(pipeWrite, { byebye: true });
+    sendToMaster(pipeRead, { byebye: true });
 
     setTimeout(function() {
         socketWrite.end();
         socketRead.end();
-    },500);
+    }, 500);
 
     return;
 }
@@ -228,12 +224,12 @@ function info() {
     return options;
 }
 
-module.exports = function(s) {
+module.exports = s => {
     ee = s;
     return {
-        connect:connect,
-        disconnect:disconnect,
-        send:send,
-        info:info
-    }
+        connect,
+        disconnect,
+        send,
+        info
+    };
 };

@@ -1,6 +1,7 @@
 const extend = require('util')._extend;
 const os = require('os');
 const path = require('path');
+// eslint-disable-next-line no-unused-vars
 const debug = require('debug')('evilevents:options');
 
 const tcpPortToMaster = 10555;
@@ -11,14 +12,14 @@ function parseOptions(opts) {
 
     if (!opts) opts = {};
 
-    let defaults = {
-        transport:"ipc",
+    const defaults = {
+        transport:'ipc',
         pipeFileNameToMaster:(opts.pipeFileName || 'evilevents')+'ToMaster',
         pipeFileNameFromMaster:(opts.pipeFileName || 'evilevents')+'FromMaster',
         pipePath:opts.pipePath || os.tmpdir(),
-        tcpPortToMaster:tcpPortToMaster,
-        tcpPortFromMaster:tcpPortFromMaster,
-        tcpIp:tcpIp,
+        tcpPortToMaster,
+        tcpPortFromMaster,
+        tcpIp,
         msgpack:false,
         verbose:false
     };
@@ -59,7 +60,7 @@ function parseOptions(opts) {
         delete opts.pipeFileNameFromMaster;
         delete opts.tcpPortToMaster;
         delete opts.tcpPortFromMaster;
-        delete opts.tcpIp
+        delete opts.tcpIp;
     } else {
         delete opts.pipePath;
         delete opts.pipeFileNameToMaster;

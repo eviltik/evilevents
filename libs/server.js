@@ -1,13 +1,13 @@
 const net = require('net');
 const msgpack = require('msgpack5-stream');
 const JsonSocket = require('json-socket');
+const fs = require('fs');
 const debug = require('debug')('evilevents:server');
 
-let clients = {};
+const clients = {};
 let options;
 let serverRead;
 let serverWrite;
-let write;
 let ee;
 
 function socketWrite(socket, data) {
@@ -44,7 +44,7 @@ function sendToEveryClients(eventName, payload) {
     // ... including me !
     ee.emit(eventName, eventName, payload);
 
-    for (let forkId in clients) {
+    for (const forkId in clients) {
         sendToClient(forkId, eventName, payload);
     }
 }
@@ -54,17 +54,15 @@ function sendToClient(forkId, eventName, payload) {
     debug('sendToClient: sending %s to %s', eventName, forkId);
 
     if (forkId === 'master') {
-        return ee.emit(eventName, eventName, payload);
+        ee.emit(eventName, eventName, payload);
+        return;
     }
 
     if (!clients[forkId]) {
         return;
     }
 
-    socketWrite(clients[forkId].readSocket,{
-        eventName:eventName,
-        payload:payload
-    });
+    socketWrite(clients[forkId].readSocket, { eventName, payload });
 
 }
 
@@ -76,14 +74,14 @@ function onSocketClose() {
 function onDataReceived(data) {
 
     debug(
-        "%s: onDataReceived: %s",
+        '%s: onDataReceived: %s',
         this.socket.type,
         JSON.stringify(data)
     );
 
     if (data.eventName) {
 
-        let  t = data.eventName.split(':');
+        const t = data.eventName.split(':');
         if (t.length>1) {
             // message must be distributed to the named worker
             if (!data.payload) data.payload = {};
@@ -111,23 +109,21 @@ function onDataReceived(data) {
         this.socket._forkId = data.hello;
         this.dup._forkId = data.hello;
 
-        if (!clients[data.hello]) {
-            clients[data.hello] = {};
-        }
+        clients[data.hello] = clients[data.hello] || {};
 
         if (this.socket.type === 'write') {
             clients[data.hello].writeSocket = this.dup;
         } else if (this.socket.type === 'read') {
             clients[data.hello].readSocket = this.dup;
         }
-        socketWrite(this.dup,{hello: true});
+        socketWrite(this.dup, { hello: true });
         return;
 
     } else if (data.byebye) {
 
         //debug('onDataReceived: byebye from worker "%s"', this.socket._forkId);
         clients[this.socket._forkId].quitting = true;
-        socketWrite(this.dup,{byebye: true});
+        socketWrite(this.dup, { byebye: true });
         //clients[this._forkId].flush();
         //clients[this._forkId].end();
         //delete clients[this._forkId];
@@ -200,10 +196,10 @@ function onClientConnected(socket, socketType) {
 
     if (options.msgpack) {
         dup = msgpack(socket);
-        dup.on("data",onDataReceived.bind({dup:dup,socket:socket}));
+        dup.on('data', onDataReceived.bind({ dup, socket }));
     } else {
         dup = new JsonSocket(socket);
-        dup.on("message",onDataReceived.bind({dup:dup,socket:socket}));
+        dup.on('message', onDataReceived.bind({ dup, socket }));
     }
 
     dup.type = socketType;
@@ -221,12 +217,12 @@ function start(opts, callback) {
 
     options = require('./options')(opts);
 
-    serverRead = net.createServer((socket) => {
-        onClientConnected(socket,'read');
+    serverRead = net.createServer(socket => {
+        onClientConnected(socket, 'read');
     });
 
-    serverWrite = net.createServer((socket) => {
-        onClientConnected(socket,'write');
+    serverWrite = net.createServer(socket => {
+        onClientConnected(socket, 'write');
     });
 
     if (options.transport === 'ipc') {
@@ -236,8 +232,17 @@ function start(opts, callback) {
             options.pipeFileToMaster
         );
 
-        serverRead.listen(options.pipeFileToMaster, function(err) {
-            if (err) return callback && callback(err)
+        try {
+            fs.unlinkSync(options.pipeFileToMaster);
+        } catch(e) {
+            //
+        }
+
+        serverRead.listen(options.pipeFileToMaster, err => {
+            if (err && callback) {
+                callback(err);
+                return;
+            }
         });
 
         debug(
@@ -245,10 +250,13 @@ function start(opts, callback) {
             options.pipeFileFromMaster
         );
 
-        serverWrite.listen(options.pipeFileFromMaster, function(err) {
-            if (err) return callback && callback(err);
-            return callback && callback();
-        });
+        try {
+            fs.unlinkSync(options.pipeFileFromMaster);
+        } catch(e) {
+            //
+        }
+
+        serverWrite.listen(options.pipeFileFromMaster, callback);
 
     } else if (options.transport === 'tcp') {
 
@@ -258,8 +266,11 @@ function start(opts, callback) {
             options.tcpPortToMaster
         );
 
-        serverRead.listen(options.tcpPortToMaster, options.tcpIp, function(err) {
-            if (err) return callback && callback(err);
+        serverRead.listen(options.tcpPortToMaster, options.tcpIp, err => {
+            if (err && callback) {
+                callback(err);
+                return;
+            }
         });
 
         debug(
@@ -268,10 +279,7 @@ function start(opts, callback) {
             options.tcpPortFromMaster
         );
 
-        serverWrite.listen(options.tcpPortFromMaster, options.tcpIp, function(err) {
-            if (err) return callback(err);
-            return callback && callback();
-        });
+        serverWrite.listen(options.tcpPortFromMaster, options.tcpIp, callback);
 
     } else {
         callback && callback(new Error('Unknow transport '+options.transport));
@@ -287,13 +295,14 @@ function stop(callback) {
         options.tcpPortFromMaster
     );
 
-    for (let forkId in clients) {
+    for (const forkId in clients) {
         clients[forkId].writeSocket.end();
         clients[forkId].readSocket.end();
     }
 
     serverRead.close();
     serverWrite.close();
+    console.log('franck', callback);
     callback && callback();
 
     return;
@@ -301,15 +310,16 @@ function stop(callback) {
 
 function send(eventName, payload) {
 
-    let t = eventName.split(':');
+    const t = eventName.split(':');
 
     // master is sending a message
-    // to a particular fork
-    if (t.length>1) return sendToClient(t[0], t[1], payload);
-
-    // or to every clients, include master
-    return sendToEveryClients(eventName, payload);
-
+    if (t.length>1) {
+        // to a particular fork
+        sendToClient(t[0], t[1], payload);
+    } else {
+        // or to every clients, include master
+        sendToEveryClients(eventName, payload);
+    }
 }
 
 function info() {
@@ -319,9 +329,9 @@ function info() {
 module.exports = function(s) {
     ee = s;
     return {
-        start:start,
-        stop:stop,
-        send:send,
-        info:info
-    }
+        start,
+        stop,
+        send,
+        info
+    };
 };
