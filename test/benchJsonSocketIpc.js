@@ -105,5 +105,4 @@ if (cluster.isMaster) {
     evilevents.on('error', (err) => {
         console.log(err);
     });
-
 }
