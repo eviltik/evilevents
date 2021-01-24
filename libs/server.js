@@ -62,13 +62,10 @@ function sendToClient(forkId, eventName, payload) {
         return;
     }
 
-    socketWrite(clients[forkId].readSocket, { eventName, payload });
-
-}
-
-function onSocketClose() {
-    debug('onSocketClose: delete %s',this._forkId);
-    delete clients[this._forkId];
+    socketWrite(
+        clients[forkId].readSocket,
+        { eventName, payload }
+    );
 }
 
 function onDataReceived(data) {
@@ -156,7 +153,10 @@ function onClientConnected(socket, socketType) {
     }.bind(socket), 1000);
     */
 
-    socket.on('close', onSocketClose);
+    socket.on('close', () => {
+        debug(`onSocketClose: delete ${socket._forkId}`);
+        delete clients[socket._forkId];
+    });
 
     socket.on('error', (err) => {
 

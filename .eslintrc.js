@@ -31,6 +31,6 @@ module.exports = {
         'no-useless-escape':'off'
     },
     'globals': {
-        'Faye': false
+        'JsonSocket': false
     }
 };
