@@ -302,8 +302,7 @@ function stop(callback) {
 
     serverRead.close();
     serverWrite.close();
-    console.log('franck', callback);
-    callback && callback();
+    callback && typeof callback === 'function' && callback();
 
     return;
 }
