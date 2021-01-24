@@ -35,6 +35,6 @@
   "dependencies": {
     "debug": "4.3.1",
     "json-socket": "0.3.0",
-    "msgpack5-stream": "4.0.3"
+    "msgpack5-stream": "1.0.0"
   }
 }
