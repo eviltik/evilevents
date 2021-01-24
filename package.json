@@ -1,6 +1,6 @@
 {
   "name": "evilevents",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "A node.js module to handle event based Inter Processes Communication",
   "main": "index.js",
   "scripts": {
