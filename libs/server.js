@@ -119,7 +119,9 @@ function onDataReceived(data) {
     } else if (data.byebye) {
 
         //debug('onDataReceived: byebye from worker "%s"', this.socket._forkId);
-        clients[this.socket._forkId].quitting = true;
+        if (clients[this.socket._forkId]) {
+            clients[this.socket._forkId].quitting = true;
+        }
         socketWrite(this.dup, { byebye: true });
         //clients[this._forkId].flush();
         //clients[this._forkId].end();
