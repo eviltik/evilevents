@@ -4,11 +4,11 @@
   "description": "A node.js module to handle event based Inter Processes Communication",
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/tap/bin/run.js test/*.js --jobs=1"
+    "test": "node node_modules/tap/bin/run.js test/*.js --jobs=1 --no-check-coverage"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eviltik/evilevents.git"
+    "url": "git@github.com-eviltik:eviltik/evilevents"
   },
   "keywords": [
     "ipc",
@@ -19,6 +19,9 @@
     "json",
     "event"
   ],
+  "tap": {
+    "check-coverage": false
+  },
   "author": "eviltik",
   "license": "MIT",
   "bugs": {
