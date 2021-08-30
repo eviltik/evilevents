@@ -26,14 +26,14 @@
   },
   "homepage": "https://github.com/eviltik/evilevents#readme",
   "devDependencies": {
-    "async": "2.6.0",
-    "microtime": "2.1.7",
+    "async": "3.2.1",
+    "microtime": "3.0.0",
     "pretty-size": "2.0.0",
-    "sprintf-js": "1.1.1",
-    "tap": "11.1.4"
+    "sprintf-js": "1.1.2",
+    "tap": "15.0.9"
   },
   "dependencies": {
-    "debug": "3.1.0",
+    "debug": "4.3.2",
     "json-socket": "0.3.0",
     "msgpack5-stream": "1.0.0"
   }
