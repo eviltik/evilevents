@@ -1,10 +1,10 @@
 {
   "name": "evilevents",
-  "version": "2.0.4",
+  "version": "2.0.12",
   "description": "A node.js module to handle event based Inter Processes Communication",
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/tap/bin/run.js test/*.js"
+    "test": "node node_modules/tap/bin/run.js test/*.js --jobs=1"
   },
   "repository": {
     "type": "git",
@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/eviltik/evilevents#readme",
   "devDependencies": {
+<<<<<<< HEAD
     "async": "3.2.1",
     "microtime": "3.0.0",
     "pretty-size": "2.0.0",
@@ -34,6 +35,16 @@
   },
   "dependencies": {
     "debug": "4.3.2",
+=======
+    "async": "3.2.0",
+    "microtime": "3.0.0",
+    "pretty-size": "2.0.0",
+    "sprintf-js": "1.1.2",
+    "tap": "14.11.0"
+  },
+  "dependencies": {
+    "debug": "4.3.1",
+>>>>>>> dd2cb0c3e65e0c7f0c2b4267efb2048e51f9f043
     "json-socket": "0.3.0",
     "msgpack5-stream": "1.0.0"
   }

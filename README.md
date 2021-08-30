@@ -2,8 +2,11 @@
 A node.js module to handle event based Inter Processes Communication
 
 -----------
-[![Build Status](https://travis-ci.org/eviltik/evilevents.svg?branch=master)](https://travis-ci.org/eviltik/evilevents)
+![Node.js CI](https://github.com/eviltik/evilevents/workflows/Node.js%20CI/badge.svg)
+[![npm version](https://badge.fury.io/js/evilevents.svg)](https://badge.fury.io/js/evilevents)
 [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+[![Dependency Status](https://david-dm.org/eviltik/evilevents.svg)](https://david-dm.org/eviltik/evilevents)
+
 
 -----------
 
