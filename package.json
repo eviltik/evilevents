@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/eviltik/evilevents#readme",
   "devDependencies": {
-    "async": "3.2.1",
+    "async": "3.2.2",
     "microtime": "3.0.0",
     "pretty-size": "2.0.0",
     "sprintf-js": "1.1.2",
